@@ -211,3 +211,45 @@ To ensure timers run reliably in the background without draining the battery, th
 
 
 * **Persistence:** All timestamps are saved in epoch milliseconds (`System.currentTimeMillis()`). If the device reboots, an `ON_BOOT_COMPLETED` BroadcastReceiver recalculates remaining times and restores all system notifications.
+
+
+---
+
+## 8. Planned Enhancements (In Scope)
+
+### Timeline View
+A dashboard section listing upcoming events in chronological order:
+- Next Dice Refill
+- Free Gift Available
+- Dice Full Projection
+- Season End
+
+### Home Screen Widgets
+Small and medium Android widgets showing dice count, next refill, gift timer, and full-dice projection.
+
+### Notification Quick Actions
+Notifications include:
+- **Claimed** (reset timer)
+- **Snooze**
+
+### Swipe Gestures
+- Swipe right on the Free Gift card to mark it claimed.
+- Swipe left on the Dice Tracker to execute the configurable **Just Played** action.
+
+---
+
+## 9. Future Ideas (Out of Scope)
+
+- Custom Event Timers
+- Session History
+- Smart Notification Suggestions
+- Statistics Dashboard
+- Automatic Season Updates
+- iOS Live Activities / Dynamic Island
+- Themes
+- Cloud Backup / Sync
+- Presets
+- Achievement System
+- Timer Accuracy Indicator
+- Power User Mode
+
