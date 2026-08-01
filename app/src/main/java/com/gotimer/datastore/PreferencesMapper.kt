@@ -48,21 +48,29 @@ object PreferencesMapper {
      * never updated as time passes; elapsed cycles are accrued on read. Raw
      * values fall back to the same defaults used by [toAppState].
      */
-    fun effectiveCurrentDice(preferences: Preferences, now: Long): Int {
-        val settings = toUserPreferences(preferences, now)
+    fun effectiveCurrentDice(preferences: Preferences, now: Long): Int =
+        effectiveCurrentDice(
+            preferences,
+            toUserPreferences(preferences, now),
+            nextRefillBaseline(preferences, now),
+            now,
+        )
+
+    private fun effectiveCurrentDice(
+        preferences: Preferences,
+        settings: UserPreferences,
+        nextRefillBaseline: Long,
+        now: Long,
+    ): Int {
         val stored = InputValidator.clampDiceCount(
             preferences[DataStoreKeys.CURRENT_DICE] ?: UserPreferences.DEFAULT_MAX_DICE,
             settings.maxDice,
-        )
-        val nextRefillEpoch = InputValidator.fallbackEpoch(
-            preferences[DataStoreKeys.NEXT_REFILL_EPOCH] ?: UserPreferences.NO_TIMESTAMP,
-            now + TimeConstants.MILLIS_PER_HOUR,
         )
         return ProjectionCalculator.calculateEffectiveDice(
             currentDice = stored,
             maxDice = settings.maxDice,
             hourlyRefillRate = settings.hourlyRefillRate,
-            nextRefillEpoch = nextRefillEpoch,
+            nextRefillEpoch = nextRefillBaseline,
             now = now,
         )
     }
@@ -71,25 +79,30 @@ object PreferencesMapper {
      * Builds the full application state snapshot from [preferences], clamping
      * dice into `0..maxDice` and falling back on invalid runtime timestamps.
      *
-     * The dice count is derived at [now] by accruing completed refill cycles
-     * onto the stored baseline, so the state always reflects what the game
-     * shows at the current moment. Fresh installs start with a full dice
-     * pool, the next refill in one hour, and the Free Gift immediately
-     * claimable.
+     * Both the dice count and the next refill are derived at [now] by accruing
+     * completed refill cycles onto their stored baselines, so the state always
+     * reflects what the game shows at the current moment: the refill countdown
+     * rolls forward by a full cycle each time one completes instead of
+     * pinning at zero. Fresh installs start with a full dice pool, the next
+     * refill in one hour, and the Free Gift immediately claimable.
      */
     fun toAppState(preferences: Preferences, now: Long): AppState {
         val settings = toUserPreferences(preferences, now)
+        val baseline = nextRefillBaseline(preferences, now)
         return AppState.fromSettings(
             settings = settings,
-            currentDice = effectiveCurrentDice(preferences, now),
-            nextRefillEpoch = InputValidator.fallbackEpoch(
-                preferences[DataStoreKeys.NEXT_REFILL_EPOCH] ?: UserPreferences.NO_TIMESTAMP,
-                now + TimeConstants.MILLIS_PER_HOUR,
-            ),
+            currentDice = effectiveCurrentDice(preferences, settings, baseline, now),
+            nextRefillEpoch = ProjectionCalculator.calculateNextRefillEpoch(baseline, now),
             freeGiftEpoch = InputValidator.fallbackEpoch(
                 preferences[DataStoreKeys.FREE_GIFT_EPOCH] ?: UserPreferences.NO_TIMESTAMP,
                 now,
             ),
         )
     }
+
+    private fun nextRefillBaseline(preferences: Preferences, now: Long): Long =
+        InputValidator.fallbackEpoch(
+            preferences[DataStoreKeys.NEXT_REFILL_EPOCH] ?: UserPreferences.NO_TIMESTAMP,
+            now + TimeConstants.MILLIS_PER_HOUR,
+        )
 }

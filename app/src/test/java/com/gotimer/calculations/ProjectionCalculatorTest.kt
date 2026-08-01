@@ -86,6 +86,28 @@ class ProjectionCalculatorTest {
     }
 
     @Test
+    fun `next refill epoch rolls forward after the moment passes`() {
+        val baseline = now + TimeConstants.MILLIS_PER_HOUR
+        assertEquals(baseline, ProjectionCalculator.calculateNextRefillEpoch(baseline, now))
+        assertEquals(
+            baseline + TimeConstants.MILLIS_PER_HOUR,
+            ProjectionCalculator.calculateNextRefillEpoch(baseline, baseline),
+        )
+        assertEquals(
+            baseline + TimeConstants.MILLIS_PER_HOUR,
+            ProjectionCalculator.calculateNextRefillEpoch(baseline, baseline + 30 * TimeConstants.MILLIS_PER_MINUTE),
+        )
+        assertEquals(
+            baseline + 2 * TimeConstants.MILLIS_PER_HOUR,
+            ProjectionCalculator.calculateNextRefillEpoch(baseline, baseline + TimeConstants.MILLIS_PER_HOUR),
+        )
+        assertEquals(
+            baseline + 3 * TimeConstants.MILLIS_PER_HOUR,
+            ProjectionCalculator.calculateNextRefillEpoch(baseline, baseline + 2 * TimeConstants.MILLIS_PER_HOUR + 30_000),
+        )
+    }
+
+    @Test
     fun `effective dice accrues the hourly rate per completed cycle`() {
         val nextRefill = now + TimeConstants.MILLIS_PER_HOUR
         assertEquals(0, ProjectionCalculator.calculateEffectiveDice(0, 80, 10, nextRefill, now))

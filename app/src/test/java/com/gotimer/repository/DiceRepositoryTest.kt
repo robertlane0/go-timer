@@ -95,6 +95,26 @@ class DiceRepositoryTest {
     }
 
     @Test
+    fun `next refill rolls forward a full cycle after the moment passes`() = runTest {
+        val repository = testRepository()
+        repository.updateDiceCount(0, now)
+
+        assertEquals(now + TimeConstants.MILLIS_PER_HOUR, repository.appState.first().nextRefillEpoch)
+
+        clock = now + 90 * TimeConstants.MILLIS_PER_MINUTE
+        assertEquals(
+            now + 120 * TimeConstants.MILLIS_PER_MINUTE,
+            repository.appState.first().nextRefillEpoch,
+        )
+
+        clock = now + 150 * TimeConstants.MILLIS_PER_MINUTE
+        assertEquals(
+            now + 180 * TimeConstants.MILLIS_PER_MINUTE,
+            repository.appState.first().nextRefillEpoch,
+        )
+    }
+
+    @Test
     fun `accrued dice never exceed capacity`() = runTest {
         val repository = testRepository()
         repository.updateDiceCount(0, now)
@@ -128,7 +148,10 @@ class DiceRepositoryTest {
         assertEquals(now + 60 * TimeConstants.MILLIS_PER_MINUTE, repository.appState.first().nextRefillEpoch)
 
         repository.resetRefillTimer(-10, now)
-        assertEquals(now, repository.appState.first().nextRefillEpoch)
+        assertEquals(
+            now + TimeConstants.MILLIS_PER_HOUR,
+            repository.appState.first().nextRefillEpoch,
+        )
     }
 
     @Test

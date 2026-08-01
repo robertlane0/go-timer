@@ -64,6 +64,18 @@ object ProjectionCalculator {
     }
 
     /**
+     * Epoch milliseconds of the next upcoming refill at [now].
+     *
+     * Refills recur every [TimeConstants.MINUTES_PER_HOUR] minutes starting at
+     * [baselineNextRefill], so once that moment passes the next boundary is
+     * one full cycle ahead. Returns [baselineNextRefill] unchanged while it is
+     * still in the future.
+     */
+    fun calculateNextRefillEpoch(baselineNextRefill: Long, now: Long): Long =
+        baselineNextRefill +
+            calculateRefillsPassed(baselineNextRefill, now) * TimeConstants.MILLIS_PER_HOUR
+
+    /**
      * Effective dice count at [now], derived from the stored baseline
      * [currentDice] plus [hourlyRefillRate] for every refill cycle completed
      * since the baseline was anchored, capped into `0..maxDice`.
