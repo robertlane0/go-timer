@@ -7,6 +7,8 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.provideContent
@@ -20,6 +22,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.gotimer.datastore.appDataStore
 import com.gotimer.repository.DiceRepository
+import com.gotimer.ui.MainActivity
 import kotlinx.coroutines.flow.first
 
 /**
@@ -62,7 +65,8 @@ private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.surface)
-                .padding(10.dp),
+                .padding(10.dp)
+                .clickable(actionStartActivity<MainActivity>()),
             horizontalAlignment = Alignment.Horizontal.Start,
             verticalAlignment = Alignment.Vertical.Top,
         ) {
