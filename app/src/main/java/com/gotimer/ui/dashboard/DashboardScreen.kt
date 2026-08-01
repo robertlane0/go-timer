@@ -131,7 +131,7 @@ private fun JustPlayedActionBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 0.dp),
     ) {
         ActionButton(
             label = "\u26A1 JUST PLAYED",
