@@ -47,6 +47,7 @@ import com.gotimer.model.UserPreferences
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -351,9 +352,12 @@ private fun minuteOf(epoch: Long): Int =
     ZonedDateTime.ofInstant(Instant.ofEpochMilli(epoch.coerceAtLeast(0)), ZoneId.systemDefault()).minute
 
 private fun combineDateAndTime(dateMillis: Long, hour: Int, minute: Int): Long {
-    val zone = ZoneId.systemDefault()
-    val date = ZonedDateTime.ofInstant(Instant.ofEpochMilli(dateMillis), zone).toLocalDate()
-    return ZonedDateTime.of(date, LocalTime.of(hour, minute), zone)
+    // DatePickerState.selectedDateMillis is documented to be UTC midnight for
+    // the selected calendar day, so the date must be read back in UTC rather
+    // than the local zone. Reading it in the local zone would shift the date
+    // back by a day for every time zone behind UTC (e.g. all of the Americas).
+    val date = Instant.ofEpochMilli(dateMillis).atZone(ZoneOffset.UTC).toLocalDate()
+    return ZonedDateTime.of(date, LocalTime.of(hour, minute), ZoneId.systemDefault())
         .toInstant()
         .toEpochMilli()
 }
