@@ -3,6 +3,7 @@ package com.gotimer.ui.widgets
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -50,7 +51,9 @@ class GoTimerWidgetReceiver : GlanceAppWidgetReceiver() {
 
 /**
  * Compact widget layout: dice count on top, then the full pool status and
- * the refill/gift countdowns.
+ * the refill/gift countdowns. Text is sized down from the Glance default so
+ * everything fits the home screen tile; every line is single-line so the
+ * widget never grows mid-line.
  */
 @Composable
 private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
@@ -59,7 +62,7 @@ private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.surface)
-                .padding(12.dp),
+                .padding(10.dp),
             horizontalAlignment = Alignment.Horizontal.Start,
             verticalAlignment = Alignment.Vertical.Top,
         ) {
@@ -67,19 +70,32 @@ private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
                 text = "GO! ${model.diceText}",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
+                    fontSize = TITLE_FONT_SIZE,
                     fontWeight = FontWeight.Bold,
                 ),
+                maxLines = 1,
             )
             Text(
                 text = model.fullProjectionText,
-                style = TextStyle(color = GlanceTheme.colors.onSurface),
-                modifier = GlanceModifier.padding(top = 4.dp),
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = BODY_FONT_SIZE,
+                ),
+                modifier = GlanceModifier.padding(top = 2.dp),
+                maxLines = 1,
             )
             Text(
                 text = "Refill ${model.nextRefillText} \u00b7 Gift ${model.giftText}",
-                style = TextStyle(color = GlanceTheme.colors.onSurface),
-                modifier = GlanceModifier.padding(top = 4.dp),
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = BODY_FONT_SIZE,
+                ),
+                modifier = GlanceModifier.padding(top = 2.dp),
+                maxLines = 1,
             )
         }
     }
 }
+
+private val TITLE_FONT_SIZE = 14.sp
+private val BODY_FONT_SIZE = 11.sp
