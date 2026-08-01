@@ -79,7 +79,7 @@ class DashboardUiStateTest {
             now,
         )
 
-        assertEquals("00m 00s", uiState.nextRefillCountdownText)
+        assertEquals("50m 00s", uiState.nextRefillCountdownText)
         assertEquals("00m 00s", uiState.seasonCountdownText)
         assertTrue(uiState.giftReady)
     }
@@ -119,7 +119,10 @@ class DashboardUiStateTest {
             now,
         )
 
-        assertEquals(listOf("Dice Full"), uiState.timelineEvents.map { it.label })
+        assertEquals(
+            listOf("Next Dice Refill", "Dice Full"),
+            uiState.timelineEvents.map { it.label },
+        )
     }
 
     @Test

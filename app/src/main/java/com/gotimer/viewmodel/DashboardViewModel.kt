@@ -19,8 +19,10 @@ import kotlinx.coroutines.launch
  *
  * Combines the persisted state with a one-second tick so countdowns stay
  * fresh while the screen is visible. The tick flow only runs while the UI is
- * subscribed, so no work happens in the background. All display math is
- * delegated to [DashboardUiState.from].
+ * subscribed, so no work happens in the background. The tick re-anchors each
+ * render at the current time, so a refill boundary rolls the countdown over
+ * to the next hour instead of pinning at zero. All display math is delegated
+ * to [DashboardUiState.from].
  *
  * @param repository State source and mutation target.
  * @param notificationScheduler Re-arms alarms after quick actions change timers.

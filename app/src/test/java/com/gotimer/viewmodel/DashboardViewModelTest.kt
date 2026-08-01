@@ -75,6 +75,23 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `next refill rolls forward when the boundary passes while visible`() = runTest(scheduler) {
+        val repository = repository()
+        repository.resetRefillTimer(5, now)
+        val viewModel = viewModel(repository)
+
+        val first = viewModel.uiState.first()
+        assertEquals("05m 00s", first.nextRefillCountdownText)
+
+        clock = now + 10 * TimeConstants.MILLIS_PER_MINUTE
+        advanceTimeBy(1_000)
+        runCurrent()
+
+        val second = viewModel.uiState.first()
+        assertEquals("55m 00s", second.nextRefillCountdownText)
+    }
+
+    @Test
     fun `onJustPlayed zeroes dice and reschedules alarms`() = runTest(scheduler) {
         val repository = repository()
         repository.updateDiceCount(40)

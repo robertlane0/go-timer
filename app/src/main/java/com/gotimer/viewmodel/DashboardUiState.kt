@@ -63,32 +63,50 @@ data class DashboardUiState(
          * Maps [state] to display values anchored at [now]. All calculation
          * is delegated to the calculation engine; this function only wires
          * inputs to outputs.
+         *
+         * The refill epoch and dice count held in [state] are derived from the
+         * stored baseline at the moment the state flow last emitted. Since that
+         * flow only re-emits when DataStore changes, both are re-derived here at
+         * [now] so a completed refill cycle rolls the countdown forward to the
+         * next hourly boundary while the screen stays visible instead of
+         * pinning at zero. The fixed gift and season timestamps are used as-is.
          */
         fun from(state: AppState, now: Long): DashboardUiState {
-            val seasonRemaining = ProjectionCalculator.calculateSeasonRemainingMillis(
-                state.seasonEndEpoch,
+            val nextRefillEpoch = ProjectionCalculator.calculateNextRefillEpoch(
+                state.nextRefillEpoch,
                 now,
             )
-            val nextRefillRemaining = (state.nextRefillEpoch - now).coerceAtLeast(0L)
-            val giftRemaining = ProjectionCalculator.calculateGiftRemainingMillis(
-                state.freeGiftEpoch,
-                now,
-            )
-            val projectionEpoch = ProjectionCalculator.calculateProjectionEpoch(
+            val currentDice = ProjectionCalculator.calculateEffectiveDice(
                 currentDice = state.currentDice,
                 maxDice = state.maxDice,
                 hourlyRefillRate = state.refillRatePerHour,
                 nextRefillEpoch = state.nextRefillEpoch,
                 now = now,
             )
+            val seasonRemaining = ProjectionCalculator.calculateSeasonRemainingMillis(
+                state.seasonEndEpoch,
+                now,
+            )
+            val nextRefillRemaining = (nextRefillEpoch - now).coerceAtLeast(0L)
+            val giftRemaining = ProjectionCalculator.calculateGiftRemainingMillis(
+                state.freeGiftEpoch,
+                now,
+            )
+            val projectionEpoch = ProjectionCalculator.calculateProjectionEpoch(
+                currentDice = currentDice,
+                maxDice = state.maxDice,
+                hourlyRefillRate = state.refillRatePerHour,
+                nextRefillEpoch = nextRefillEpoch,
+                now = now,
+            )
 
             return DashboardUiState(
                 seasonName = state.seasonName,
                 seasonCountdownText = CountdownFormatter.formatCountdown(seasonRemaining),
-                currentDice = state.currentDice,
+                currentDice = currentDice,
                 maxDice = state.maxDice,
                 refillRatePerHour = state.refillRatePerHour,
-                diceProgress = ProjectionCalculator.calculateProgress(state.currentDice, state.maxDice),
+                diceProgress = ProjectionCalculator.calculateProgress(currentDice, state.maxDice),
                 nextRefillCountdownText = CountdownFormatter.formatCountdown(nextRefillRemaining),
                 fullProjectionCountdownText = projectionEpoch?.let {
                     CountdownFormatter.formatCountdown((it - now).coerceAtLeast(0L))
@@ -104,6 +122,7 @@ data class DashboardUiState(
                 giftReady = giftRemaining == 0L,
                 timelineEvents = buildTimeline(
                     state = state,
+                    nextRefillEpoch = nextRefillEpoch,
                     projectionEpoch = projectionEpoch,
                     now = now,
                 ),
@@ -118,6 +137,7 @@ data class DashboardUiState(
          */
         private fun buildTimeline(
             state: AppState,
+            nextRefillEpoch: Long,
             projectionEpoch: Long?,
             now: Long,
         ): List<TimelineEvent> {
@@ -128,7 +148,7 @@ data class DashboardUiState(
                 countdownText = CountdownFormatter.formatCountdown((epoch - now).coerceAtLeast(0L)),
             )
             val candidates = listOfNotNull(
-                event(TIMELINE_REFILL_LABEL, state.nextRefillEpoch)
+                event(TIMELINE_REFILL_LABEL, nextRefillEpoch)
                     .takeIf { it.epochMillis > now },
                 event(TIMELINE_GIFT_LABEL, state.freeGiftEpoch)
                     .takeIf { it.epochMillis > now },
