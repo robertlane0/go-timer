@@ -37,6 +37,7 @@ class DashboardUiStateTest {
         assertEquals("14d 00h 00m", uiState.seasonCountdownText)
         assertEquals(32, uiState.currentDice)
         assertEquals(80, uiState.maxDice)
+        assertEquals(10, uiState.refillRatePerHour)
         assertEquals(0.4f, uiState.diceProgress, 0.0001f)
         assertEquals("20m 00s", uiState.nextRefillCountdownText)
         assertEquals("4h 20m", uiState.fullProjectionCountdownText)

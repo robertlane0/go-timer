@@ -4,7 +4,6 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import com.gotimer.R
 import com.gotimer.ui.MainActivity
 
@@ -45,13 +44,7 @@ object NotificationFactory {
             .build()
 
     private fun baseBuilder(context: Context, channelId: String): Notification.Builder {
-        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(context, channelId)
-        } else {
-            @Suppress("DEPRECATION")
-            Notification.Builder(context).setPriority(Notification.PRIORITY_DEFAULT)
-        }
-        return builder
+        return Notification.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(launchIntent(context))
             .setAutoCancel(true)

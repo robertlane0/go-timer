@@ -16,6 +16,7 @@ import com.gotimer.util.TimeConstants
  * @property seasonCountdownText Season remaining as `14d 06h 22m`.
  * @property currentDice Current dice count.
  * @property maxDice Maximum dice capacity.
+ * @property refillRatePerHour Dice generated per hour, shown on the refill line.
  * @property diceProgress Progress fraction in `[0.0, 1.0]`.
  * @property nextRefillCountdownText Time to the next refill, with seconds.
  * @property fullProjectionCountdownText Remaining time until full, or null when full.
@@ -28,6 +29,7 @@ data class DashboardUiState(
     val seasonCountdownText: String,
     val currentDice: Int,
     val maxDice: Int,
+    val refillRatePerHour: Int,
     val diceProgress: Float,
     val nextRefillCountdownText: String,
     val fullProjectionCountdownText: String?,
@@ -68,6 +70,7 @@ data class DashboardUiState(
                 seasonCountdownText = CountdownFormatter.formatCountdown(seasonRemaining),
                 currentDice = state.currentDice,
                 maxDice = state.maxDice,
+                refillRatePerHour = state.refillRatePerHour,
                 diceProgress = ProjectionCalculator.calculateProgress(state.currentDice, state.maxDice),
                 nextRefillCountdownText = CountdownFormatter.formatCountdown(nextRefillRemaining),
                 fullProjectionCountdownText = projectionEpoch?.let {
