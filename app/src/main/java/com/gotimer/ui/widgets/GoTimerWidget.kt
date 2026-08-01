@@ -97,5 +97,5 @@ private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
     }
 }
 
-private val TITLE_FONT_SIZE = 14.sp
-private val BODY_FONT_SIZE = 11.sp
+private val TITLE_FONT_SIZE = 16.sp
+private val BODY_FONT_SIZE = 13.sp
