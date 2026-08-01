@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -53,7 +54,12 @@ class MainActivity : ComponentActivity() {
                     ActivityResultContracts.RequestPermission(),
                 ) { }
 
-                requestNotificationPermissionIfNeeded(permissionLauncher)
+                // Deferred out of the composition body: the launcher is only
+                // safe to use once the ActivityResultRegistry has initialized,
+                // which is guaranteed inside a LaunchedEffect.
+                LaunchedEffect(permissionLauncher) {
+                    requestNotificationPermissionIfNeeded(permissionLauncher)
+                }
 
                 if (showSettings) {
                     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
