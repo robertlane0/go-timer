@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Icon
 import com.gotimer.R
 import com.gotimer.scheduler.NotificationAction
 import com.gotimer.scheduler.NotificationReceiver
@@ -83,7 +84,7 @@ object NotificationFactory {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         return Notification.Action.Builder(
-            R.drawable.ic_notification,
+            Icon.createWithResource(context, R.drawable.ic_notification),
             label,
             pendingIntent,
         ).build()

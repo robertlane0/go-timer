@@ -2,15 +2,19 @@ package com.gotimer.ui.widgets
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -36,6 +40,12 @@ import kotlinx.coroutines.flow.first
  */
 class GoTimerWidget : GlanceAppWidget() {
 
+    /**
+     * Recompute the widget layout whenever the user resizes it so the font
+     * can scale to the available space.
+     */
+    override val sizeMode: SizeMode = SizeMode.Exact
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val state = DiceRepository(context.appDataStore).appState.first()
         val model = GoTimerWidgetModel.from(state, System.currentTimeMillis())
@@ -53,13 +63,16 @@ class GoTimerWidgetReceiver : GlanceAppWidgetReceiver() {
 }
 
 /**
- * Compact widget layout: dice count on top, then the full pool status and
- * the refill/gift countdowns. Text is sized down from the Glance default so
- * everything fits the home screen tile; every line is single-line so the
- * widget never grows mid-line.
+ * Widget layout: dice count on top, then the full pool status and the
+ * refill/gift countdowns. Fonts scale with the widget width so text is
+ * legible when expanded and still fits when compact. Every line is
+ * single-line so the widget never grows mid-line.
  */
 @Composable
 private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
+    val width = LocalSize.current.width
+    val titleSize = titleFontSizeFor(width)
+    val bodySize = bodyFontSizeFor(width)
     GlanceTheme {
         Column(
             modifier = GlanceModifier
@@ -74,7 +87,7 @@ private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
                 text = "GO! ${model.diceText}",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
-                    fontSize = TITLE_FONT_SIZE,
+                    fontSize = titleSize,
                     fontWeight = FontWeight.Bold,
                 ),
                 maxLines = 1,
@@ -83,7 +96,7 @@ private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
                 text = model.fullProjectionText,
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
-                    fontSize = BODY_FONT_SIZE,
+                    fontSize = bodySize,
                 ),
                 modifier = GlanceModifier.padding(top = 2.dp),
                 maxLines = 1,
@@ -92,7 +105,7 @@ private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
                 text = "Refill ${model.nextRefillText} \u00b7 Gift ${model.giftText}",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
-                    fontSize = BODY_FONT_SIZE,
+                    fontSize = bodySize,
                 ),
                 modifier = GlanceModifier.padding(top = 2.dp),
                 maxLines = 1,
@@ -101,5 +114,24 @@ private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
     }
 }
 
-private val TITLE_FONT_SIZE = 16.sp
-private val BODY_FONT_SIZE = 13.sp
+/**
+ * Scales the title font up as the widget gets wider. Breakpoints match the
+ * Launcher's pre-defined widget widths so the text grows on every resize.
+ */
+@Composable
+private fun titleFontSizeFor(width: Dp): TextUnit = when {
+    width >= 240.dp -> 24.sp
+    width >= 160.dp -> 18.sp
+    else -> 16.sp
+}
+
+/**
+ * Scales the body font up with the width. Stays below the title size at
+ * every breakpoint so the hierarchy is preserved.
+ */
+@Composable
+private fun bodyFontSizeFor(width: Dp): TextUnit = when {
+    width >= 240.dp -> 18.sp
+    width >= 160.dp -> 14.sp
+    else -> 13.sp
+}
