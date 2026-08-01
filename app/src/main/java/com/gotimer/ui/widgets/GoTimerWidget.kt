@@ -115,23 +115,26 @@ private fun GoTimerWidgetContent(model: GoTimerWidgetModel) {
 }
 
 /**
- * Scales the title font up as the widget gets wider. Breakpoints match the
- * Launcher's pre-defined widget widths so the text grows on every resize.
+ * Scales the title font continuously with the widget width so it grows to
+ * fill the available space, while never shrinking below the compact size.
  */
 @Composable
-private fun titleFontSizeFor(width: Dp): TextUnit = when {
-    width >= 240.dp -> 24.sp
-    width >= 160.dp -> 18.sp
-    else -> 16.sp
-}
+private fun titleFontSizeFor(width: Dp): TextUnit =
+    (width.value * TITLE_WIDTH_SCALE).coerceAtLeast(TITLE_MIN_SIZE_SP).sp
 
 /**
- * Scales the body font up with the width. Stays below the title size at
- * every breakpoint so the hierarchy is preserved.
+ * Scales the body font continuously with the width, kept proportionally
+ * below the title so the hierarchy is preserved.
  */
 @Composable
-private fun bodyFontSizeFor(width: Dp): TextUnit = when {
-    width >= 240.dp -> 18.sp
-    width >= 160.dp -> 14.sp
-    else -> 13.sp
-}
+private fun bodyFontSizeFor(width: Dp): TextUnit =
+    (width.value * BODY_WIDTH_SCALE).coerceAtLeast(BODY_MIN_SIZE_SP).sp
+
+/** Dp of widget width per sp of title text. */
+private const val TITLE_WIDTH_SCALE = 0.1f
+
+/** Dp of widget width per sp of body text. */
+private const val BODY_WIDTH_SCALE = 0.075f
+
+private const val TITLE_MIN_SIZE_SP = 24f
+private const val BODY_MIN_SIZE_SP = 18f
