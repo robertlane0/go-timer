@@ -25,6 +25,8 @@ class DiceRepositoryTest {
 
     private val now = 1_700_000_000_000L
 
+    private var clock: Long = now
+
     private fun TestScope.testDataStore(): DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
@@ -32,9 +34,12 @@ class DiceRepositoryTest {
             temporaryFolder.newFile("test.preferences_pb")
         }
 
+    private fun TestScope.testRepository(): DiceRepository =
+        DiceRepository(testDataStore(), clock = { clock })
+
     @Test
     fun `empty store emits default state`() = runTest {
-        val repository = DiceRepository(testDataStore())
+        val repository = testRepository()
 
         val state = repository.appState.first()
 
@@ -49,7 +54,7 @@ class DiceRepositoryTest {
 
     @Test
     fun `updateDiceCount stores and clamps the count`() = runTest {
-        val repository = DiceRepository(testDataStore())
+        val repository = testRepository()
 
         repository.updateDiceCount(32)
         assertEquals(32, repository.appState.first().currentDice)
@@ -62,8 +67,49 @@ class DiceRepositoryTest {
     }
 
     @Test
+    fun `updateDiceCount anchors the next refill one hour out`() = runTest {
+        val repository = testRepository()
+
+        repository.updateDiceCount(32, now)
+
+        assertEquals(now + TimeConstants.MILLIS_PER_HOUR, repository.appState.first().nextRefillEpoch)
+    }
+
+    @Test
+    fun `dice accrue completed refills as time passes`() = runTest {
+        val repository = testRepository()
+        repository.updateDiceCount(0, now)
+        repository.saveSettings(UserPreferences(hourlyRefillRate = 10), now)
+
+        clock = now + 30 * TimeConstants.MILLIS_PER_MINUTE
+        assertEquals(0, repository.appState.first().currentDice)
+
+        clock = now + 90 * TimeConstants.MILLIS_PER_MINUTE
+        assertEquals(10, repository.appState.first().currentDice)
+
+        clock = now + 150 * TimeConstants.MILLIS_PER_MINUTE
+        assertEquals(20, repository.appState.first().currentDice)
+
+        clock = now + 210 * TimeConstants.MILLIS_PER_MINUTE
+        assertEquals(30, repository.appState.first().currentDice)
+    }
+
+    @Test
+    fun `accrued dice never exceed capacity`() = runTest {
+        val repository = testRepository()
+        repository.updateDiceCount(0, now)
+        repository.saveSettings(UserPreferences(maxDice = 80, hourlyRefillRate = 10), now)
+
+        clock = now + 8 * TimeConstants.MILLIS_PER_HOUR + TimeConstants.MILLIS_PER_HOUR
+        assertEquals(80, repository.appState.first().currentDice)
+
+        clock = now + 5 * 24 * TimeConstants.MILLIS_PER_HOUR
+        assertEquals(80, repository.appState.first().currentDice)
+    }
+
+    @Test
     fun `updateDiceCount respects a custom max dice`() = runTest {
-        val repository = DiceRepository(testDataStore())
+        val repository = testRepository()
 
         repository.saveSettings(UserPreferences(maxDice = 50), now)
         repository.updateDiceCount(60)
@@ -73,7 +119,7 @@ class DiceRepositoryTest {
 
     @Test
     fun `resetRefillTimer stores now plus minutes and clamps`() = runTest {
-        val repository = DiceRepository(testDataStore())
+        val repository = testRepository()
 
         repository.resetRefillTimer(20, now)
         assertEquals(now + 20 * TimeConstants.MILLIS_PER_MINUTE, repository.appState.first().nextRefillEpoch)
@@ -87,7 +133,7 @@ class DiceRepositoryTest {
 
     @Test
     fun `claimFreeGift sets the gift eight hours out`() = runTest {
-        val repository = DiceRepository(testDataStore())
+        val repository = testRepository()
 
         repository.claimFreeGift(now)
 
@@ -99,7 +145,7 @@ class DiceRepositoryTest {
 
     @Test
     fun `just played applies default flags`() = runTest {
-        val repository = DiceRepository(testDataStore())
+        val repository = testRepository()
         repository.updateDiceCount(40)
         repository.resetRefillTimer(15, now)
         repository.claimFreeGift(now)
@@ -116,8 +162,30 @@ class DiceRepositoryTest {
     }
 
     @Test
+    fun `just played with zeroing disabled materializes accrued dice`() = runTest {
+        val repository = testRepository()
+        repository.saveSettings(
+            UserPreferences(
+                justPlayedZeroDice = false,
+                justPlayedResetRefill = true,
+            ),
+            now,
+        )
+        repository.updateDiceCount(0, now)
+
+        clock = now + 90 * TimeConstants.MILLIS_PER_MINUTE
+        repository.executeJustPlayedAction(clock)
+
+        assertEquals(10, repository.appState.first().currentDice)
+        assertEquals(clock + TimeConstants.MILLIS_PER_HOUR, repository.appState.first().nextRefillEpoch)
+
+        clock = clock + 120 * TimeConstants.MILLIS_PER_MINUTE
+        assertEquals(30, repository.appState.first().currentDice)
+    }
+
+    @Test
     fun `just played with all flags also resets the gift`() = runTest {
-        val repository = DiceRepository(testDataStore())
+        val repository = testRepository()
         repository.saveSettings(
             UserPreferences(
                 justPlayedZeroDice = true,
@@ -140,7 +208,7 @@ class DiceRepositoryTest {
 
     @Test
     fun `just played with all flags disabled changes nothing`() = runTest {
-        val repository = DiceRepository(testDataStore())
+        val repository = testRepository()
         repository.updateDiceCount(40)
         repository.resetRefillTimer(15, now)
         repository.claimFreeGift(now)
@@ -166,7 +234,7 @@ class DiceRepositoryTest {
 
     @Test
     fun `saveSettings round-trips through the flow`() = runTest {
-        val repository = DiceRepository(testDataStore())
+        val repository = testRepository()
         val preferences = UserPreferences(
             seasonName = "Monopoly Origins",
             seasonEndEpoch = now + 12 * TimeConstants.MILLIS_PER_DAY,
@@ -189,7 +257,7 @@ class DiceRepositoryTest {
 
     @Test
     fun `saveSettings clamps invalid settings`() = runTest {
-        val repository = DiceRepository(testDataStore())
+        val repository = testRepository()
 
         repository.saveSettings(
             UserPreferences(
@@ -231,7 +299,7 @@ class DiceRepositoryTest {
             preferences[DataStoreKeys.CURRENT_DICE] = 9_999
         }
 
-        val state = DiceRepository(dataStore).appState.first()
+        val state = DiceRepository(dataStore, clock = { clock }).appState.first()
 
         assertEquals(80, state.currentDice)
     }

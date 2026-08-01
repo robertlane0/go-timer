@@ -40,20 +40,48 @@ object PreferencesMapper {
     )
 
     /**
+     * Effective current dice count at [now], derived from the stored baseline
+     * plus every refill cycle completed by [now].
+     *
+     * The stored count is anchored at the start of the current refill cycle
+     * (the next boundary lives in `NEXT_REFILL_EPOCH`), so the baseline is
+     * never updated as time passes; elapsed cycles are accrued on read. Raw
+     * values fall back to the same defaults used by [toAppState].
+     */
+    fun effectiveCurrentDice(preferences: Preferences, now: Long): Int {
+        val settings = toUserPreferences(preferences, now)
+        val stored = InputValidator.clampDiceCount(
+            preferences[DataStoreKeys.CURRENT_DICE] ?: UserPreferences.DEFAULT_MAX_DICE,
+            settings.maxDice,
+        )
+        val nextRefillEpoch = InputValidator.fallbackEpoch(
+            preferences[DataStoreKeys.NEXT_REFILL_EPOCH] ?: UserPreferences.NO_TIMESTAMP,
+            now + TimeConstants.MILLIS_PER_HOUR,
+        )
+        return ProjectionCalculator.calculateEffectiveDice(
+            currentDice = stored,
+            maxDice = settings.maxDice,
+            hourlyRefillRate = settings.hourlyRefillRate,
+            nextRefillEpoch = nextRefillEpoch,
+            now = now,
+        )
+    }
+
+    /**
      * Builds the full application state snapshot from [preferences], clamping
      * dice into `0..maxDice` and falling back on invalid runtime timestamps.
      *
-     * Fresh installs start with a full dice pool, the next refill in one hour,
-     * and the Free Gift immediately claimable.
+     * The dice count is derived at [now] by accruing completed refill cycles
+     * onto the stored baseline, so the state always reflects what the game
+     * shows at the current moment. Fresh installs start with a full dice
+     * pool, the next refill in one hour, and the Free Gift immediately
+     * claimable.
      */
     fun toAppState(preferences: Preferences, now: Long): AppState {
         val settings = toUserPreferences(preferences, now)
         return AppState.fromSettings(
             settings = settings,
-            currentDice = InputValidator.clampDiceCount(
-                preferences[DataStoreKeys.CURRENT_DICE] ?: UserPreferences.DEFAULT_MAX_DICE,
-                settings.maxDice,
-            ),
+            currentDice = effectiveCurrentDice(preferences, now),
             nextRefillEpoch = InputValidator.fallbackEpoch(
                 preferences[DataStoreKeys.NEXT_REFILL_EPOCH] ?: UserPreferences.NO_TIMESTAMP,
                 now + TimeConstants.MILLIS_PER_HOUR,

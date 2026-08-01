@@ -34,7 +34,7 @@ class UpdateViewModelTest {
 
     @Test
     fun `dice presets derive from capacity and refill rate`() = runTest(scheduler) {
-        val repository = DiceRepository(TestDataStores.create(temporaryFolder, scheduler))
+        val repository = DiceRepository(TestDataStores.create(temporaryFolder, scheduler), clock = { now })
         repository.saveSettings(
             UserPreferences(maxDice = 80, hourlyRefillRate = 10),
             now,
@@ -49,7 +49,7 @@ class UpdateViewModelTest {
 
     @Test
     fun `dice presets include max when not a multiple of the rate`() = runTest(scheduler) {
-        val repository = DiceRepository(TestDataStores.create(temporaryFolder, scheduler))
+        val repository = DiceRepository(TestDataStores.create(temporaryFolder, scheduler), clock = { now })
         repository.saveSettings(
             UserPreferences(maxDice = 50, hourlyRefillRate = 10),
             now,
@@ -64,7 +64,7 @@ class UpdateViewModelTest {
     @Test
     fun `selections enable save`() = runTest(scheduler) {
         val viewModel = UpdateViewModel(
-            DiceRepository(TestDataStores.create(temporaryFolder, scheduler)),
+            DiceRepository(TestDataStores.create(temporaryFolder, scheduler), clock = { now }),
             FakeNotificationRescheduler(),
         )
         viewModel.uiState.first()
@@ -87,7 +87,7 @@ class UpdateViewModelTest {
 
     @Test
     fun `custom dice input is parsed and clamped`() = runTest(scheduler) {
-        val repository = DiceRepository(TestDataStores.create(temporaryFolder, scheduler))
+        val repository = DiceRepository(TestDataStores.create(temporaryFolder, scheduler), clock = { now })
         repository.saveSettings(UserPreferences(maxDice = 50), now)
         val viewModel = UpdateViewModel(
             repository,
@@ -111,7 +111,7 @@ class UpdateViewModelTest {
 
     @Test
     fun `save applies only selected categories and reschedules`() = runTest(scheduler) {
-        val repository = DiceRepository(TestDataStores.create(temporaryFolder, scheduler))
+        val repository = DiceRepository(TestDataStores.create(temporaryFolder, scheduler), clock = { now })
         repository.updateDiceCount(10)
         repository.claimFreeGift(now)
         val giftBefore = repository.appState.first().freeGiftEpoch
@@ -136,7 +136,7 @@ class UpdateViewModelTest {
 
     @Test
     fun `save with no selections changes nothing`() = runTest(scheduler) {
-        val repository = DiceRepository(TestDataStores.create(temporaryFolder, scheduler))
+        val repository = DiceRepository(TestDataStores.create(temporaryFolder, scheduler), clock = { now })
         repository.updateDiceCount(10)
         repository.resetRefillTimer(15, now)
         repository.claimFreeGift(now)

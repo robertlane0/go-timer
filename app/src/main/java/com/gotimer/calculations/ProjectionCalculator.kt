@@ -50,6 +50,43 @@ object ProjectionCalculator {
     }
 
     /**
+     * Number of refill cycles that have completed by [now].
+     *
+     * Refills recur every [TimeConstants.MINUTES_PER_HOUR] minutes starting at
+     * [nextRefillEpoch]; the stored dice count is the baseline at the start of
+     * the current cycle, so every completed cycle adds one refill. Returns
+     * zero while the next refill has not happened yet.
+     */
+    fun calculateRefillsPassed(nextRefillEpoch: Long, now: Long): Long {
+        val elapsedMillis = now - nextRefillEpoch
+        if (elapsedMillis < 0) return 0
+        return elapsedMillis / TimeConstants.MILLIS_PER_HOUR + 1
+    }
+
+    /**
+     * Effective dice count at [now], derived from the stored baseline
+     * [currentDice] plus [hourlyRefillRate] for every refill cycle completed
+     * since the baseline was anchored, capped into `0..maxDice`.
+     *
+     * A non-positive [hourlyRefillRate] adds no refills; a non-positive
+     * [maxDice] caps the result at zero.
+     */
+    fun calculateEffectiveDice(
+        currentDice: Int,
+        maxDice: Int,
+        hourlyRefillRate: Int,
+        nextRefillEpoch: Long,
+        now: Long,
+    ): Int {
+        val rate = hourlyRefillRate.coerceAtLeast(0)
+        val accrued = if (rate > 0) calculateRefillsPassed(nextRefillEpoch, now) * rate else 0L
+        val capacity = maxDice.coerceAtLeast(0)
+        return (currentDice.toLong().coerceAtLeast(0L) + accrued)
+            .coerceIn(0L, capacity.toLong())
+            .toInt()
+    }
+
+    /**
      * Total minutes until the dice pool reaches capacity, starting from
      * [minutesToNextRefill].
      *

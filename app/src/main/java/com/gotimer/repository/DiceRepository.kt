@@ -23,9 +23,18 @@ import kotlinx.coroutines.flow.map
  * edit. All mutations sanitize input via [InputValidator] so invalid values
  * never reach the store.
  *
+ * The dice count is derived at read time by accruing completed refill cycles
+ * onto the stored baseline, so the emitted state always reflects the current
+ * moment. Every write that changes the count re-anchors the refill clock, so
+ * the baseline never drifts.
+ *
  * @param dataStore The preferences DataStore backing the application state.
+ * @param clock Time source, injectable for deterministic tests.
  */
-class DiceRepository(private val dataStore: DataStore<Preferences>) {
+class DiceRepository(
+    private val dataStore: DataStore<Preferences>,
+    private val clock: () -> Long = System::currentTimeMillis,
+) {
 
     /**
      * Continuous snapshot of the application state.
@@ -35,17 +44,22 @@ class DiceRepository(private val dataStore: DataStore<Preferences>) {
      */
     val appState: Flow<AppState> = dataStore.data
         .catch { emit(emptyPreferences()) }
-        .map { PreferencesMapper.toAppState(it, System.currentTimeMillis()) }
+        .map { PreferencesMapper.toAppState(it, clock()) }
 
     /**
-     * Stores [count] as the current dice count, clamped into `0..maxDice`.
+     * Stores [count] as the current dice count, clamped into `0..maxDice`,
+     * and re-anchors the refill clock so the next refill lands one hour after
+     * [now]. The count is an absolute observation at [now], so the stored
+     * baseline and the refill clock always stay in sync.
      */
-    suspend fun updateDiceCount(count: Int) {
+    suspend fun updateDiceCount(count: Int, now: Long = clock()) {
         dataStore.edit { preferences ->
             val maxDice = preferences[DataStoreKeys.MAX_DICE]
                 ?: UserPreferences.DEFAULT_MAX_DICE
             preferences[DataStoreKeys.CURRENT_DICE] =
                 InputValidator.clampDiceCount(count, maxDice.coerceAtLeast(0))
+            preferences[DataStoreKeys.NEXT_REFILL_EPOCH] =
+                now + TimeConstants.MILLIS_PER_HOUR
         }
     }
 
@@ -53,7 +67,7 @@ class DiceRepository(private val dataStore: DataStore<Preferences>) {
      * Resets the next refill timer so the refill lands [minutesToNext] minutes
      * after [now], clamped to the specification range `0..60`.
      */
-    suspend fun resetRefillTimer(minutesToNext: Int, now: Long = System.currentTimeMillis()) {
+    suspend fun resetRefillTimer(minutesToNext: Int, now: Long = clock()) {
         val minutes = InputValidator.clampRefillMinutes(minutesToNext).toLong()
         dataStore.edit { preferences ->
             preferences[DataStoreKeys.NEXT_REFILL_EPOCH] =
@@ -65,7 +79,7 @@ class DiceRepository(private val dataStore: DataStore<Preferences>) {
      * Restarts the Free Gift cycle: the gift becomes claimable 8 hours after
      * [now].
      */
-    suspend fun claimFreeGift(now: Long = System.currentTimeMillis()) {
+    suspend fun claimFreeGift(now: Long = clock()) {
         dataStore.edit { preferences ->
             preferences[DataStoreKeys.FREE_GIFT_EPOCH] =
                 now + UserPreferences.FREE_GIFT_INTERVAL_HOURS * TimeConstants.MILLIS_PER_HOUR
@@ -78,7 +92,7 @@ class DiceRepository(private val dataStore: DataStore<Preferences>) {
      */
     suspend fun resetFreeGiftTimer(
         hoursUntilClaimable: Int,
-        now: Long = System.currentTimeMillis(),
+        now: Long = clock(),
     ) {
         val hours = InputValidator.clamp(
             hoursUntilClaimable,
@@ -95,13 +109,22 @@ class DiceRepository(private val dataStore: DataStore<Preferences>) {
      * Applies the configured "Just Played" batch update in one atomic write:
      * optionally zeroing dice, resetting the refill timer to 60 minutes, and
      * restarting the Free Gift cycle.
+     *
+     * When zeroing is disabled but the refill timer is reset, the count
+     * accrued since the last anchor is materialized into the stored baseline
+     * so no completed refill is lost by re-anchoring.
      */
-    suspend fun executeJustPlayedAction(now: Long = System.currentTimeMillis()) {
+    suspend fun executeJustPlayedAction(now: Long = clock()) {
         dataStore.edit { preferences ->
-            if (preferences[DataStoreKeys.JUST_PLAYED_ZERO_DICE] ?: true) {
+            val zeroDice = preferences[DataStoreKeys.JUST_PLAYED_ZERO_DICE] ?: true
+            val resetRefill = preferences[DataStoreKeys.JUST_PLAYED_RESET_REFILL] ?: true
+            if (zeroDice) {
                 preferences[DataStoreKeys.CURRENT_DICE] = 0
+            } else if (resetRefill) {
+                preferences[DataStoreKeys.CURRENT_DICE] =
+                    PreferencesMapper.effectiveCurrentDice(preferences, now)
             }
-            if (preferences[DataStoreKeys.JUST_PLAYED_RESET_REFILL] ?: true) {
+            if (resetRefill) {
                 preferences[DataStoreKeys.NEXT_REFILL_EPOCH] =
                     now + TimeConstants.MILLIS_PER_HOUR
             }
@@ -119,7 +142,7 @@ class DiceRepository(private val dataStore: DataStore<Preferences>) {
      */
     suspend fun saveSettings(
         userPreferences: UserPreferences,
-        now: Long = System.currentTimeMillis(),
+        now: Long = clock(),
     ) {
         dataStore.edit { preferences ->
             preferences[DataStoreKeys.SEASON_NAME] = userPreferences.seasonName

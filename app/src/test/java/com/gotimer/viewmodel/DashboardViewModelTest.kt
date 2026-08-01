@@ -34,7 +34,7 @@ class DashboardViewModelTest {
     private var clock: Long = 1_700_000_000_000L
 
     private fun repository(): DiceRepository =
-        DiceRepository(TestDataStores.create(temporaryFolder, scheduler))
+        DiceRepository(TestDataStores.create(temporaryFolder, scheduler), clock = { now })
 
     private fun viewModel(repository: DiceRepository): DashboardViewModel =
         DashboardViewModel(

@@ -75,6 +75,40 @@ class ProjectionCalculatorTest {
     }
 
     @Test
+    fun `refills passed counts completed cycles after the next refill`() {
+        val nextRefill = now + TimeConstants.MILLIS_PER_HOUR
+        assertEquals(0, ProjectionCalculator.calculateRefillsPassed(nextRefill, now))
+        assertEquals(0, ProjectionCalculator.calculateRefillsPassed(nextRefill, nextRefill - 1))
+        assertEquals(1, ProjectionCalculator.calculateRefillsPassed(nextRefill, nextRefill))
+        assertEquals(1, ProjectionCalculator.calculateRefillsPassed(nextRefill, nextRefill + 59 * TimeConstants.MILLIS_PER_MINUTE))
+        assertEquals(2, ProjectionCalculator.calculateRefillsPassed(nextRefill, nextRefill + TimeConstants.MILLIS_PER_HOUR))
+        assertEquals(3, ProjectionCalculator.calculateRefillsPassed(nextRefill, nextRefill + 2 * TimeConstants.MILLIS_PER_HOUR + 30_000))
+    }
+
+    @Test
+    fun `effective dice accrues the hourly rate per completed cycle`() {
+        val nextRefill = now + TimeConstants.MILLIS_PER_HOUR
+        assertEquals(0, ProjectionCalculator.calculateEffectiveDice(0, 80, 10, nextRefill, now))
+        assertEquals(10, ProjectionCalculator.calculateEffectiveDice(0, 80, 10, nextRefill, nextRefill + 30 * TimeConstants.MILLIS_PER_MINUTE))
+        assertEquals(20, ProjectionCalculator.calculateEffectiveDice(0, 80, 10, nextRefill, nextRefill + TimeConstants.MILLIS_PER_HOUR))
+        assertEquals(35, ProjectionCalculator.calculateEffectiveDice(15, 80, 10, nextRefill, nextRefill + TimeConstants.MILLIS_PER_HOUR))
+    }
+
+    @Test
+    fun `effective dice is capped at max capacity`() {
+        val nextRefill = now + TimeConstants.MILLIS_PER_HOUR
+        assertEquals(80, ProjectionCalculator.calculateEffectiveDice(0, 80, 10, nextRefill, nextRefill + 20 * TimeConstants.MILLIS_PER_HOUR))
+        assertEquals(80, ProjectionCalculator.calculateEffectiveDice(75, 80, 10, nextRefill, nextRefill + TimeConstants.MILLIS_PER_HOUR))
+    }
+
+    @Test
+    fun `effective dice ignores a non-positive refill rate`() {
+        val nextRefill = now + TimeConstants.MILLIS_PER_HOUR
+        assertEquals(32, ProjectionCalculator.calculateEffectiveDice(32, 80, 0, nextRefill, nextRefill + TimeConstants.MILLIS_PER_HOUR))
+        assertEquals(32, ProjectionCalculator.calculateEffectiveDice(32, 80, -5, nextRefill, nextRefill + TimeConstants.MILLIS_PER_HOUR))
+    }
+
+    @Test
     fun `projection epoch equals now plus total minutes`() {
         val projection = ProjectionCalculator.calculateProjectionEpoch(
             currentDice = 15,

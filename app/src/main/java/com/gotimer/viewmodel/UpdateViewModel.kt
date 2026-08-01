@@ -101,7 +101,7 @@ class UpdateViewModel(
         viewModelScope.launch {
             val selection = uiState.value
             val now = clock()
-            selection.selectedDice?.let { repository.updateDiceCount(it) }
+            selection.selectedDice?.let { repository.updateDiceCount(it, now) }
             selection.selectedRefillMinutes?.let { repository.resetRefillTimer(it, now) }
             selection.selectedGiftOption?.let {
                 repository.resetFreeGiftTimer(it.hoursUntilClaimable, now)
