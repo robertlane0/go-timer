@@ -2,10 +2,14 @@ package com.gotimer.ui.dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -21,6 +25,7 @@ import com.gotimer.ui.components.ActionButton
 import com.gotimer.ui.components.CountdownCard
 import com.gotimer.ui.components.ProgressCard
 import com.gotimer.viewmodel.DashboardUiState
+import com.gotimer.viewmodel.TimelineEvent
 
 /**
  * High-contrast season countdown banner at the top of the dashboard.
@@ -136,6 +141,71 @@ fun GiftTrackerCard(
         ActionButton(
             label = "Claimed Just Now",
             onClick = onClaimInvoked,
+        )
+    }
+}
+
+/**
+ * Chronological list of upcoming events: next dice refill, Free Gift,
+ * full dice projection, and season end. Renders nothing when [events] is
+ * empty. All text is pre-computed in the UI state layer.
+ */
+@Composable
+fun TimelineCard(
+    events: List<TimelineEvent>,
+    modifier: Modifier = Modifier,
+) {
+    if (events.isEmpty()) {
+        return
+    }
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "UPCOMING",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            events.forEach { event ->
+                TimelineRow(event = event)
+            }
+        }
+    }
+}
+
+/**
+ * One timeline row: label with a leading dot, clock time, and relative
+ * countdown.
+ */
+@Composable
+private fun TimelineRow(event: TimelineEvent) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(MaterialTheme.colorScheme.primary, CircleShape),
+        )
+        Text(
+            text = event.label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp),
+        )
+        Text(
+            text = "At ${event.clockTimeText}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "· in ${event.countdownText}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

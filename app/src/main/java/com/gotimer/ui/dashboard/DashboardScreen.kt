@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gotimer.ui.components.ActionButton
+import com.gotimer.ui.components.SwipeToAction
 import com.gotimer.viewmodel.DashboardUiState
 
 /**
@@ -64,11 +66,24 @@ fun DashboardScreen(
                 seasonName = uiState.seasonName,
                 countdownText = uiState.seasonCountdownText,
             )
-            DiceTrackerCard(uiState = uiState)
-            GiftTrackerCard(
-                uiState = uiState,
-                onClaimInvoked = onClaimFreeGift,
-            )
+            SwipeToAction(
+                hintText = "JUST PLAYED",
+                direction = SwipeToDismissBoxValue.EndToStart,
+                onAction = onJustPlayed,
+            ) {
+                DiceTrackerCard(uiState = uiState)
+            }
+            SwipeToAction(
+                hintText = "CLAIMED",
+                direction = SwipeToDismissBoxValue.StartToEnd,
+                onAction = onClaimFreeGift,
+            ) {
+                GiftTrackerCard(
+                    uiState = uiState,
+                    onClaimInvoked = onClaimFreeGift,
+                )
+            }
+            TimelineCard(events = uiState.timelineEvents)
         }
     }
 }

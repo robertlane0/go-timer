@@ -15,15 +15,19 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.gotimer.notifications.NotificationChannels
 import com.gotimer.ui.dashboard.DashboardScreen
 import com.gotimer.ui.settings.SettingsScreen
 import com.gotimer.ui.theme.GoTimerTheme
 import com.gotimer.ui.update.UpdateSheet
+import com.gotimer.ui.widgets.GoTimerWidget
+import androidx.glance.appwidget.updateAll
 import com.gotimer.viewmodel.AppViewModelFactory
 import com.gotimer.viewmodel.DashboardViewModel
 import com.gotimer.viewmodel.SettingsViewModel
 import com.gotimer.viewmodel.UpdateViewModel
+import kotlinx.coroutines.launch
 
 /**
  * Single-activity app hosting the dashboard, settings window, and update
@@ -86,6 +90,16 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Refresh the home screen widget whenever the app is opened so it
+        // reflects the latest persisted state without waiting for the
+        // periodic launcher update.
+        lifecycleScope.launch {
+            GoTimerWidget().updateAll(this@MainActivity)
         }
     }
 

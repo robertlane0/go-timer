@@ -48,6 +48,14 @@ class NotificationScheduler(
         }
     }
 
+    /**
+     * Re-arms the alarm for [type] to fire [minutes] from now without
+     * touching the rest of the plan. Used by the snooze quick action.
+     */
+    override fun snooze(type: NotificationType, minutes: Int) {
+        scheduleAlarm(type, System.currentTimeMillis() + minutes * MILLIS_PER_MINUTE)
+    }
+
     @SuppressLint("MissingPermission")
     private fun scheduleAlarm(type: NotificationType, triggerAtMillis: Long) {
         val alarmManager = context.getSystemService(AlarmManager::class.java)
@@ -89,5 +97,6 @@ class NotificationScheduler(
 
     private companion object {
         const val INEXACT_WINDOW_MILLIS = 10 * 60_000L
+        const val MILLIS_PER_MINUTE = 60_000L
     }
 }

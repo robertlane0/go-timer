@@ -6,6 +6,21 @@ import com.gotimer.model.AppState
 import com.gotimer.util.TimeConstants
 
 /**
+ * One upcoming event in the dashboard timeline.
+ *
+ * @property label Human-readable event name.
+ * @property epochMillis When the event occurs.
+ * @property clockTimeText Clock time of the event, e.g. `8:30 PM`.
+ * @property countdownText Remaining time, e.g. `20m`.
+ */
+data class TimelineEvent(
+    val label: String,
+    val epochMillis: Long,
+    val clockTimeText: String,
+    val countdownText: String,
+)
+
+/**
  * Immutable presentation state for the dashboard screen.
  *
  * Every field is ready for display: countdown strings, progress fraction,
@@ -23,6 +38,7 @@ import com.gotimer.util.TimeConstants
  * @property fullProjectionClockText Clock time of full projection, or null when full.
  * @property giftCountdownText Free Gift countdown with seconds, or the ready text.
  * @property giftReady True when the Free Gift can be claimed now.
+ * @property timelineEvents Upcoming events sorted chronologically.
  */
 data class DashboardUiState(
     val seasonName: String,
@@ -36,6 +52,7 @@ data class DashboardUiState(
     val fullProjectionClockText: String?,
     val giftCountdownText: String,
     val giftReady: Boolean,
+    val timelineEvents: List<TimelineEvent>,
 ) {
 
     companion object {
@@ -85,7 +102,47 @@ data class DashboardUiState(
                     CountdownFormatter.formatCountdownWithSeconds(giftRemaining)
                 },
                 giftReady = giftRemaining == 0L,
+                timelineEvents = buildTimeline(
+                    state = state,
+                    projectionEpoch = projectionEpoch,
+                    now = now,
+                ),
             )
         }
+
+        /**
+         * Collects the upcoming events in chronological order, skipping any
+         * that have already passed: next dice refill, Free Gift available,
+         * full dice projection, and season end. Display strings are computed
+         * here so the UI never performs calculations.
+         */
+        private fun buildTimeline(
+            state: AppState,
+            projectionEpoch: Long?,
+            now: Long,
+        ): List<TimelineEvent> {
+            fun event(label: String, epoch: Long): TimelineEvent = TimelineEvent(
+                label = label,
+                epochMillis = epoch,
+                clockTimeText = CountdownFormatter.formatClockTime(epoch),
+                countdownText = CountdownFormatter.formatCountdown((epoch - now).coerceAtLeast(0L)),
+            )
+            val candidates = listOfNotNull(
+                event(TIMELINE_REFILL_LABEL, state.nextRefillEpoch)
+                    .takeIf { it.epochMillis > now },
+                event(TIMELINE_GIFT_LABEL, state.freeGiftEpoch)
+                    .takeIf { it.epochMillis > now },
+                projectionEpoch?.let { event(TIMELINE_DICE_FULL_LABEL, it) }
+                    ?.takeIf { it.epochMillis > now },
+                event(TIMELINE_SEASON_END_LABEL, state.seasonEndEpoch)
+                    .takeIf { it.epochMillis > now },
+            )
+            return candidates.sortedBy { it.epochMillis }
+        }
+
+        private const val TIMELINE_REFILL_LABEL = "Next Dice Refill"
+        private const val TIMELINE_GIFT_LABEL = "Free Gift Available"
+        private const val TIMELINE_DICE_FULL_LABEL = "Dice Full"
+        private const val TIMELINE_SEASON_END_LABEL = "Season End"
     }
 }

@@ -5,13 +5,15 @@ import android.content.Context
 import android.content.Intent
 import com.gotimer.datastore.appDataStore
 import com.gotimer.repository.DiceRepository
+import com.gotimer.ui.widgets.GoTimerWidget
+import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
  * Rebuilds all notification alarms after a device reboot, since alarms do not
- * survive power cycles.
+ * survive power cycles, and refreshes the home screen widget.
  *
  * Reads the persisted state, recalculates remaining times, and arms the full
  * plan via [NotificationScheduler]. Uses [goAsync] so the receiver stays alive
@@ -27,6 +29,7 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 val repository = DiceRepository(context.applicationContext.appDataStore)
                 NotificationScheduler(context.applicationContext, repository).rescheduleAll()
+                GoTimerWidget().updateAll(context.applicationContext)
             } finally {
                 pendingResult.finish()
             }

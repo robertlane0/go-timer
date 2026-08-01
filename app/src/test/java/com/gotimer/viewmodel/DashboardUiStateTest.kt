@@ -83,4 +83,52 @@ class DashboardUiStateTest {
         assertEquals("00m 00s", uiState.seasonCountdownText)
         assertTrue(uiState.giftReady)
     }
+
+    @Test
+    fun `timeline lists upcoming events in chronological order`() {
+        val uiState = DashboardUiState.from(state(), now)
+
+        assertEquals(
+            listOf("Next Dice Refill", "Free Gift Available", "Dice Full", "Season End"),
+            uiState.timelineEvents.map { it.label },
+        )
+        assertTrue(
+            uiState.timelineEvents
+                .map { it.epochMillis }
+                .zipWithNext()
+                .all { (first, second) -> first <= second },
+        )
+    }
+
+    @Test
+    fun `timeline event epochs match the underlying state`() {
+        val uiState = DashboardUiState.from(state(), now)
+
+        val refill = uiState.timelineEvents.first { it.label == "Next Dice Refill" }
+        assertEquals(now + 20 * TimeConstants.MILLIS_PER_MINUTE, refill.epochMillis)
+    }
+
+    @Test
+    fun `timeline skips events that already passed`() {
+        val uiState = DashboardUiState.from(
+            state(
+                nextRefillInMinutes = -10,
+                giftInHours = -1,
+                seasonInDays = -1,
+            ),
+            now,
+        )
+
+        assertEquals(listOf("Dice Full"), uiState.timelineEvents.map { it.label })
+    }
+
+    @Test
+    fun `timeline omits dice full when the pool is full`() {
+        val uiState = DashboardUiState.from(state(currentDice = 80), now)
+
+        assertEquals(
+            listOf("Next Dice Refill", "Free Gift Available", "Season End"),
+            uiState.timelineEvents.map { it.label },
+        )
+    }
 }

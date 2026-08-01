@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_label">GO! Timer</string>
+    <string name="widget_description">Current dice, refill, Free Gift, and full pool countdowns.</string>
+</resources>
