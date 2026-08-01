@@ -73,6 +73,25 @@ class DiceRepository(private val dataStore: DataStore<Preferences>) {
     }
 
     /**
+     * Positions the Free Gift [hoursUntilClaimable] hours out from [now],
+     * clamped into `0..8`. Zero makes the gift claimable immediately.
+     */
+    suspend fun resetFreeGiftTimer(
+        hoursUntilClaimable: Int,
+        now: Long = System.currentTimeMillis(),
+    ) {
+        val hours = InputValidator.clamp(
+            hoursUntilClaimable,
+            MIN_GIFT_HOURS,
+            UserPreferences.FREE_GIFT_INTERVAL_HOURS.toInt(),
+        )
+        dataStore.edit { preferences ->
+            preferences[DataStoreKeys.FREE_GIFT_EPOCH] =
+                now + hours * TimeConstants.MILLIS_PER_HOUR
+        }
+    }
+
+    /**
      * Applies the configured "Just Played" batch update in one atomic write:
      * optionally zeroing dice, resetting the refill timer to 60 minutes, and
      * restarting the Free Gift cycle.
@@ -118,5 +137,9 @@ class DiceRepository(private val dataStore: DataStore<Preferences>) {
             preferences[DataStoreKeys.NOTIFICATION_LEAD_TIME_MINUTES] =
                 userPreferences.notificationLeadMinutes.coerceAtLeast(0)
         }
+    }
+
+    private companion object {
+        const val MIN_GIFT_HOURS = 0
     }
 }

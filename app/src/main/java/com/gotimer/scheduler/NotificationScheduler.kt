@@ -23,13 +23,13 @@ import kotlinx.coroutines.flow.first
 class NotificationScheduler(
     private val context: Context,
     private val repository: DiceRepository,
-) {
+) : NotificationRescheduler {
 
     /**
      * Recomputes the full alarm plan from the persisted state at [now] and
      * arms it, replacing any previously scheduled alarms.
      */
-    suspend fun rescheduleAll(now: Long = System.currentTimeMillis()) {
+    override suspend fun rescheduleAll(now: Long) {
         val state = repository.appState.first()
         val plan = SchedulePlanner.buildPlan(state, now)
         cancelAll()
@@ -40,7 +40,7 @@ class NotificationScheduler(
      * Cancels every alarm the scheduler could have armed. Notification
      * channels and already-posted notifications are unaffected.
      */
-    fun cancelAll() {
+    override fun cancelAll() {
         val alarmManager = context.getSystemService(AlarmManager::class.java)
         NotificationType.entries.forEach { type ->
             alarmManager.cancel(pendingIntent(type))
