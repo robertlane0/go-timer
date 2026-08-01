@@ -57,6 +57,7 @@ fun ProgressCard(
             LinearProgressIndicator(
                 progress = { progress.coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth(),
+                drawStopIndicator = {},
             )
             content()
         }

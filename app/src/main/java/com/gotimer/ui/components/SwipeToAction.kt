@@ -13,6 +13,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -81,6 +82,7 @@ private fun SwipeHint(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .clip(MaterialTheme.shapes.medium)
             .background(containerColor)
             .padding(horizontal = 20.dp),
         contentAlignment = if (direction == SwipeToDismissBoxValue.EndToStart) {
