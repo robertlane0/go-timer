@@ -3,6 +3,7 @@ package com.gotimer.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gotimer.model.UserPreferences
+import com.gotimer.notifications.PersistentNotificationManager
 import com.gotimer.repository.DiceRepository
 import com.gotimer.scheduler.NotificationRescheduler
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,14 +17,17 @@ import kotlinx.coroutines.launch
  *
  * Exposes the persisted preferences and persists validated changes. After
  * every save the notification scheduler is re-armed, because capacity,
- * rates, season end, and lead times all affect the alarm plan.
+ * rates, season end, and lead times all affect the alarm plan. The
+ * persistent status notification is also refreshed to reflect any changes.
  *
  * @param repository Persistence entry point.
  * @param notificationScheduler Re-arms alarms after settings change.
+ * @param persistentNotificationManager Updates the persistent status notification.
  */
 class SettingsViewModel(
     private val repository: DiceRepository,
     private val notificationScheduler: NotificationRescheduler,
+    private val persistentNotificationManager: PersistentNotificationManager? = null,
 ) : ViewModel() {
 
     /**
@@ -39,12 +43,14 @@ class SettingsViewModel(
 
     /**
      * Validates and persists [newPreferences], then re-arms all notification
-     * alarms for the new configuration.
+     * alarms for the new configuration and refreshes the persistent status
+     * notification.
      */
     fun save(newPreferences: UserPreferences) {
         viewModelScope.launch {
             repository.saveSettings(newPreferences)
             notificationScheduler.rescheduleAll()
+            persistentNotificationManager?.update()
         }
     }
 

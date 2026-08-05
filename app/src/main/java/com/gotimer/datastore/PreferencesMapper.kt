@@ -37,6 +37,7 @@ object PreferencesMapper {
         notificationsEnabled = preferences[DataStoreKeys.NOTIFICATIONS_ENABLED] ?: true,
         notificationLeadMinutes = (preferences[DataStoreKeys.NOTIFICATION_LEAD_TIME_MINUTES]
             ?: UserPreferences.DEFAULT_LEAD_MINUTES).coerceAtLeast(0),
+        persistentNotificationEnabled = preferences[DataStoreKeys.PERSISTENT_NOTIFICATION_ENABLED] ?: false,
     )
 
     /**

@@ -3,6 +3,7 @@ package com.gotimer.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gotimer.model.AppState
+import com.gotimer.notifications.PersistentNotificationManager
 import com.gotimer.repository.DiceRepository
 import com.gotimer.scheduler.NotificationRescheduler
 import kotlinx.coroutines.delay
@@ -26,11 +27,13 @@ import kotlinx.coroutines.launch
  *
  * @param repository State source and mutation target.
  * @param notificationScheduler Re-arms alarms after quick actions change timers.
+ * @param persistentNotificationManager Updates the persistent status notification.
  * @param clock Time source, injectable for deterministic tests.
  */
 class DashboardViewModel(
     private val repository: DiceRepository,
     private val notificationScheduler: NotificationRescheduler,
+    private val persistentNotificationManager: PersistentNotificationManager? = null,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
@@ -64,23 +67,26 @@ class DashboardViewModel(
 
     /**
      * Executes the configured "Just Played" batch update and re-arms
-     * notification alarms for the new timers.
+     * notification alarms for the new timers. Also refreshes the persistent
+     * status notification.
      */
     fun onJustPlayed() {
         viewModelScope.launch {
             repository.executeJustPlayedAction(clock())
             notificationScheduler.rescheduleAll(clock())
+            persistentNotificationManager?.update()
         }
     }
 
     /**
      * Restarts the Free Gift 8-hour cycle ("Claimed Just Now") and re-arms
-     * notification alarms.
+     * notification alarms. Also refreshes the persistent status notification.
      */
     fun onClaimFreeGift() {
         viewModelScope.launch {
             repository.claimFreeGift(clock())
             notificationScheduler.rescheduleAll(clock())
+            persistentNotificationManager?.update()
         }
     }
 

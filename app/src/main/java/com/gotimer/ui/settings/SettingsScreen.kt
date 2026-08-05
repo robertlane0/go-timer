@@ -72,6 +72,7 @@ fun SettingsScreen(
     var justPlayedResetRefill by remember(settings) { mutableStateOf(settings.justPlayedResetRefill) }
     var justPlayedResetGift by remember(settings) { mutableStateOf(settings.justPlayedResetGift) }
     var notificationsEnabled by remember(settings) { mutableStateOf(settings.notificationsEnabled) }
+    var persistentNotificationEnabled by remember(settings) { mutableStateOf(settings.persistentNotificationEnabled) }
     var leadMinutes by remember(settings) { mutableIntStateOf(settings.notificationLeadMinutes) }
     var pendingDateMillis by remember { mutableLongStateOf(NO_DATE) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -100,6 +101,7 @@ fun SettingsScreen(
                                     justPlayedResetGift = justPlayedResetGift,
                                     notificationsEnabled = notificationsEnabled,
                                     notificationLeadMinutes = leadMinutes,
+                                    persistentNotificationEnabled = persistentNotificationEnabled,
                                 ),
                             )
                         },
@@ -176,6 +178,11 @@ fun SettingsScreen(
                     label = "Push Notifications",
                     checked = notificationsEnabled,
                     onCheckedChange = { notificationsEnabled = it },
+                )
+                SettingSwitchRow(
+                    label = "Persistent Status",
+                    checked = persistentNotificationEnabled,
+                    onCheckedChange = { persistentNotificationEnabled = it },
                 )
                 LeadTimeDropdown(
                     leadMinutes = leadMinutes,

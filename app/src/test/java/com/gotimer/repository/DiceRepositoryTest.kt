@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -268,6 +269,7 @@ class DiceRepositoryTest {
             justPlayedResetGift = true,
             notificationsEnabled = false,
             notificationLeadMinutes = 10,
+            persistentNotificationEnabled = true,
         )
 
         repository.saveSettings(preferences, now)
@@ -276,6 +278,33 @@ class DiceRepositoryTest {
         assertEquals(preferences, state.settings)
         assertEquals(120, state.maxDice)
         assertEquals("Monopoly Origins", state.seasonName)
+        assertTrue(state.settings.persistentNotificationEnabled)
+    }
+
+    @Test
+    fun `persistentNotificationEnabled defaults to false`() = runTest {
+        val repository = testRepository()
+
+        val state = repository.appState.first()
+
+        assertFalse(state.settings.persistentNotificationEnabled)
+    }
+
+    @Test
+    fun `persistentNotificationEnabled persists across saves`() = runTest {
+        val repository = testRepository()
+
+        repository.saveSettings(
+            UserPreferences(persistentNotificationEnabled = true),
+            now,
+        )
+        assertTrue(repository.appState.first().settings.persistentNotificationEnabled)
+
+        repository.saveSettings(
+            UserPreferences(persistentNotificationEnabled = false),
+            now,
+        )
+        assertFalse(repository.appState.first().settings.persistentNotificationEnabled)
     }
 
     @Test

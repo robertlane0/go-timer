@@ -50,4 +50,7 @@ object DataStoreKeys {
 
     /** Minutes before an event completes to send the alert. */
     val NOTIFICATION_LEAD_TIME_MINUTES: Preferences.Key<Int> = intPreferencesKey("notification_lead_time_minutes")
+
+    /** If true, a persistent status notification is shown in the shade. */
+    val PERSISTENT_NOTIFICATION_ENABLED: Preferences.Key<Boolean> = booleanPreferencesKey("persistent_notification_enabled")
 }

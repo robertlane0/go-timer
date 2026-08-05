@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.gotimer.datastore.appDataStore
+import com.gotimer.notifications.PersistentNotificationManager
 import com.gotimer.repository.DiceRepository
 import com.gotimer.ui.widgets.GoTimerWidget
 import androidx.glance.appwidget.updateAll
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Rebuilds all notification alarms after a device reboot, since alarms do not
- * survive power cycles, and refreshes the home screen widget.
+ * survive power cycles, refreshes the home screen widget, and restores the
+ * persistent status notification if enabled.
  *
  * Reads the persisted state, recalculates remaining times, and arms the full
  * plan via [NotificationScheduler]. Uses [goAsync] so the receiver stays alive
@@ -27,9 +29,11 @@ class BootReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val repository = DiceRepository(context.applicationContext.appDataStore)
-                NotificationScheduler(context.applicationContext, repository).rescheduleAll()
-                GoTimerWidget().updateAll(context.applicationContext)
+                val appContext = context.applicationContext
+                val repository = DiceRepository(appContext.appDataStore)
+                NotificationScheduler(appContext, repository).rescheduleAll()
+                GoTimerWidget().updateAll(appContext)
+                PersistentNotificationManager(appContext, repository).update()
             } finally {
                 pendingResult.finish()
             }

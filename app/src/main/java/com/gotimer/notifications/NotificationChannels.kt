@@ -23,6 +23,9 @@ object NotificationChannels {
     /** Default priority channel for season ending reminders. */
     const val CHANNEL_SEASON_ALERTS = "channel_season_alerts"
 
+    /** Low priority channel for the persistent status notification. */
+    const val CHANNEL_PERSISTENT_STATUS = "channel_persistent_status"
+
     /**
      * Creates the three channels on the device. Safe to call repeatedly; an
      * existing channel's settings are left untouched by the system.
@@ -46,6 +49,14 @@ object NotificationChannels {
                     "Season Alerts",
                     NotificationManager.IMPORTANCE_DEFAULT,
                 ).apply { description = "Reminds you before the season ends" },
+                NotificationChannel(
+                    CHANNEL_PERSISTENT_STATUS,
+                    "Persistent Status",
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    description = "Shows ongoing dice, refill, and gift status"
+                    setShowBadge(false)
+                },
             ),
         )
     }

@@ -61,6 +61,33 @@ object NotificationFactory {
             .build()
     }
 
+    /**
+     * Persistent status notification showing current dice, refill, and gift
+     * information. Uses [setOngoing][Notification.Builder.setOngoing] so it
+     * cannot be swiped away; the app manages its lifecycle.
+     *
+     * @param diceText e.g. `"450 / 800 dice"`
+     * @param refillText e.g. `"Next refill in 45m"` or `"Refill in 45m"`
+     * @param giftText e.g. `"Gift ready"` or `"Gift in 2h 15m"`
+     */
+    fun persistentStatus(
+        context: Context,
+        diceText: String,
+        refillText: String,
+        giftText: String,
+    ): Notification =
+        baseBuilder(context, NotificationChannels.CHANNEL_PERSISTENT_STATUS)
+            .setContentTitle("GO! Timer")
+            .setContentText(diceText)
+            .setSubText("Status")
+            .setOngoing(true)
+            .setStyle(
+                Notification.BigTextStyle()
+                    .bigText("$diceText\n$refillText\n$giftText")
+                    .setBigContentTitle("GO! Timer"),
+            )
+            .build()
+
     private fun snoozeAction(context: Context, type: NotificationType): Notification.Action =
         quickAction(context, type, NotificationAction.SNOOZE, ACTION_SNOOZE_LABEL)
 

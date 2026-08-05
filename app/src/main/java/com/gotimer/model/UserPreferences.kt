@@ -19,6 +19,7 @@ import com.gotimer.util.TimeConstants
  * @property justPlayedResetGift If true, "Just Played" resets the Free Gift timer to 8 hours.
  * @property notificationsEnabled If true, system notifications are active.
  * @property notificationLeadMinutes Minutes before an event completes to send the alert.
+ * @property persistentNotificationEnabled If true, a persistent status notification is shown.
  */
 data class UserPreferences(
     val seasonName: String = DEFAULT_SEASON_NAME,
@@ -30,6 +31,7 @@ data class UserPreferences(
     val justPlayedResetGift: Boolean = false,
     val notificationsEnabled: Boolean = true,
     val notificationLeadMinutes: Int = DEFAULT_LEAD_MINUTES,
+    val persistentNotificationEnabled: Boolean = false,
 ) {
 
     companion object {

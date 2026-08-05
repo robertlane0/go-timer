@@ -159,6 +159,8 @@ class DiceRepository(
             preferences[DataStoreKeys.NOTIFICATIONS_ENABLED] = userPreferences.notificationsEnabled
             preferences[DataStoreKeys.NOTIFICATION_LEAD_TIME_MINUTES] =
                 userPreferences.notificationLeadMinutes.coerceAtLeast(0)
+            preferences[DataStoreKeys.PERSISTENT_NOTIFICATION_ENABLED] =
+                userPreferences.persistentNotificationEnabled
         }
     }
 

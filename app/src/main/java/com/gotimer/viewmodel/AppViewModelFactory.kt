@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.gotimer.datastore.appDataStore
+import com.gotimer.notifications.PersistentNotificationManager
 import com.gotimer.repository.DiceRepository
 import com.gotimer.scheduler.NotificationScheduler
 
@@ -27,12 +28,14 @@ object AppViewModelFactory {
                 DashboardViewModel(
                     repository = repository(appContext),
                     notificationScheduler = scheduler(appContext),
+                    persistentNotificationManager = persistentNotificationManager(appContext),
                 )
             }
             initializer {
                 SettingsViewModel(
                     repository = repository(appContext),
                     notificationScheduler = scheduler(appContext),
+                    persistentNotificationManager = persistentNotificationManager(appContext),
                 )
             }
             initializer {
@@ -49,4 +52,7 @@ object AppViewModelFactory {
 
     private fun scheduler(context: Context): NotificationScheduler =
         NotificationScheduler(context, repository(context))
+
+    private fun persistentNotificationManager(context: Context): PersistentNotificationManager =
+        PersistentNotificationManager(context, repository(context))
 }

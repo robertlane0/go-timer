@@ -7,6 +7,7 @@ import android.content.Intent
 import com.gotimer.datastore.appDataStore
 import com.gotimer.notifications.NotificationChannels
 import com.gotimer.notifications.NotificationFactory
+import com.gotimer.notifications.PersistentNotificationManager
 import com.gotimer.repository.DiceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +23,8 @@ import kotlinx.coroutines.launch
  *
  * Quick actions mutate the repository (which lives in DataStore) off the
  * main thread, then re-derive the alarm plan; the snooze action instead arms
- * a single deferred alarm without disturbing the rest of the plan.
+ * a single deferred alarm without disturbing the rest of the plan. The
+ * persistent status notification is also refreshed after mutations.
  */
 class NotificationReceiver : BroadcastReceiver() {
 
@@ -43,11 +45,13 @@ class NotificationReceiver : BroadcastReceiver() {
                 runQuickAction(context, intent) { repository, _ ->
                     repository.executeJustPlayedAction()
                     NotificationScheduler(context, repository).rescheduleAll()
+                    PersistentNotificationManager(context, repository).update()
                 }
             NotificationAction.CLAIMED.action ->
                 runQuickAction(context, intent) { repository, _ ->
                     repository.claimFreeGift()
                     NotificationScheduler(context, repository).rescheduleAll()
+                    PersistentNotificationManager(context, repository).update()
                 }
             NotificationAction.SNOOZE.action ->
                 runQuickAction(context, intent) { repository, type ->
