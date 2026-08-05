@@ -24,7 +24,8 @@ import kotlinx.coroutines.launch
  * Quick actions mutate the repository (which lives in DataStore) off the
  * main thread, then re-derive the alarm plan; the snooze action instead arms
  * a single deferred alarm without disturbing the rest of the plan. The
- * persistent status notification is also refreshed after mutations.
+ * persistent status notification is also refreshed after mutations and
+ * re-posted when the user dismisses it.
  */
 class NotificationReceiver : BroadcastReceiver() {
 
@@ -57,6 +58,26 @@ class NotificationReceiver : BroadcastReceiver() {
                 runQuickAction(context, intent) { repository, type ->
                     NotificationScheduler(context, repository).snooze(type)
                 }
+            NotificationAction.PERSISTENT_STATUS_DISMISSED.action ->
+                restorePersistentStatus(context)
+        }
+    }
+
+    /**
+     * Re-posts the persistent status notification after the user dismissed
+     * it, so it reappears instead of staying gone. Held open with [goAsync]
+     * because rebuilding requires a DataStore read. No-op when the feature is
+     * disabled (the manager cancels instead).
+     */
+    private fun restorePersistentStatus(context: Context) {
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val repository = DiceRepository(context.appDataStore)
+                PersistentNotificationManager(context, repository).update()
+            } finally {
+                pendingResult.finish()
+            }
         }
     }
 

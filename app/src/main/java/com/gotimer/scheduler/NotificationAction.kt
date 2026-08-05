@@ -15,6 +15,9 @@ enum class NotificationAction(val action: String) {
 
     /** Defers the notification by the scheduler's snooze interval. */
     SNOOZE("com.gotimer.action.SNOOZE"),
+
+    /** Re-posts the persistent status notification after it is dismissed. */
+    PERSISTENT_STATUS_DISMISSED("com.gotimer.action.PERSISTENT_STATUS_DISMISSED"),
     ;
 
     companion object {

@@ -63,8 +63,10 @@ object NotificationFactory {
 
     /**
      * Persistent status notification showing current dice, refill, and gift
-     * information. Uses [setOngoing][Notification.Builder.setOngoing] so it
-     * cannot be swiped away; the app manages its lifecycle.
+     * information. Marked ongoing to resist dismissal on Android 13 and
+     * earlier. On Android 14+ ongoing no longer blocks manual dismissal, so a
+     * delete intent is wired to [NotificationReceiver] to re-post the
+     * notification whenever the user swipes it away, keeping it persistent.
      *
      * @param diceText e.g. `"450 / 800 dice"`
      * @param refillText e.g. `"Next refill in 45m"` or `"Refill in 45m"`
@@ -81,12 +83,29 @@ object NotificationFactory {
             .setContentText(diceText)
             .setSubText("Status")
             .setOngoing(true)
+            .setDeleteIntent(deleteIntent(context))
             .setStyle(
                 Notification.BigTextStyle()
                     .bigText("$diceText\n$refillText\n$giftText")
                     .setBigContentTitle("GO! Timer"),
             )
             .build()
+
+    /**
+     * Broadcast intent delivered when the user dismisses the persistent
+     * status notification. The receiver re-posts it so the notification
+     * reappears instead of staying gone.
+     */
+    private fun deleteIntent(context: Context): PendingIntent {
+        val intent = Intent(context, NotificationReceiver::class.java)
+            .setAction(NotificationAction.PERSISTENT_STATUS_DISMISSED.action)
+        return PendingIntent.getBroadcast(
+            context,
+            DELETE_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
 
     private fun snoozeAction(context: Context, type: NotificationType): Notification.Action =
         quickAction(context, type, NotificationAction.SNOOZE, ACTION_SNOOZE_LABEL)
@@ -136,6 +155,7 @@ object NotificationFactory {
         )
     }
 
+    private const val DELETE_REQUEST_CODE = 2_000
     private const val ACTION_REQUEST_CODE_BASE = 1_000
     private const val ACTION_REQUEST_CODE_STRIDE = 10
     private const val ACTION_PLAYED_LABEL = "Just Played"
