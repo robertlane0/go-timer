@@ -71,7 +71,6 @@ class PersistentNotificationManager(
             state.nextRefillEpoch,
             now,
         )
-        val nextRefillRemaining = (nextRefillEpoch - now).coerceAtLeast(0L)
         val giftRemaining = ProjectionCalculator.calculateGiftRemainingMillis(
             state.freeGiftEpoch,
             now,
@@ -81,12 +80,12 @@ class PersistentNotificationManager(
         val refillText = if (effectiveDice >= state.maxDice) {
             "Dice full"
         } else {
-            "Refill in ${CountdownFormatter.formatCountdown(nextRefillRemaining)}"
+            "Refill at ${CountdownFormatter.formatClockTime(nextRefillEpoch)}"
         }
         val giftText = if (giftRemaining == 0L) {
             "Gift ready to claim"
         } else {
-            "Gift in ${CountdownFormatter.formatCountdown(giftRemaining)}"
+            "Gift at ${CountdownFormatter.formatClockTime(state.freeGiftEpoch)}"
         }
 
         return NotificationFactory.persistentStatus(context, diceText, refillText, giftText)

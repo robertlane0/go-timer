@@ -20,11 +20,13 @@ class SchedulePlannerTest {
         seasonInMillis: Long = 10 * TimeConstants.MILLIS_PER_DAY,
         notificationsEnabled: Boolean = true,
         leadMinutes: Int = 5,
+        persistentNotificationEnabled: Boolean = false,
     ): AppState = AppState.fromSettings(
         settings = UserPreferences(
             seasonEndEpoch = now + seasonInMillis,
             notificationsEnabled = notificationsEnabled,
             notificationLeadMinutes = leadMinutes,
+            persistentNotificationEnabled = persistentNotificationEnabled,
         ),
         currentDice = currentDice,
         nextRefillEpoch = now + nextRefillInMinutes * TimeConstants.MILLIS_PER_MINUTE,
@@ -148,5 +150,61 @@ class SchedulePlannerTest {
 
         val triggers = plan.map { it.triggerAtMillis }
         assertEquals(triggers.sorted(), triggers)
+    }
+
+    @Test
+    fun `plan skips the persistent refresh when the feature is disabled`() {
+        val plan = SchedulePlanner.buildPlan(state(), now)
+
+        assertTrue(plan.none { it.type == NotificationType.PERSISTENT_REFRESH })
+    }
+
+    @Test
+    fun `plan arms the persistent refresh at the next refill boundary`() {
+        val plan = SchedulePlanner.buildPlan(
+            state(persistentNotificationEnabled = true),
+            now,
+        )
+
+        assertEquals(
+            now + 20 * TimeConstants.MILLIS_PER_MINUTE,
+            plan.first { it.type == NotificationType.PERSISTENT_REFRESH }.triggerAtMillis,
+        )
+    }
+
+    @Test
+    fun `plan arms the persistent refresh at the gift boundary when sooner`() {
+        val plan = SchedulePlanner.buildPlan(
+            state(persistentNotificationEnabled = true, giftInMillis = 10 * TimeConstants.MILLIS_PER_MINUTE),
+            now,
+        )
+
+        assertEquals(
+            now + 10 * TimeConstants.MILLIS_PER_MINUTE,
+            plan.first { it.type == NotificationType.PERSISTENT_REFRESH }.triggerAtMillis,
+        )
+    }
+
+    @Test
+    fun `plan arms the persistent refresh only at the gift when dice are full`() {
+        val plan = SchedulePlanner.buildPlan(
+            state(persistentNotificationEnabled = true, currentDice = 80),
+            now,
+        )
+
+        assertEquals(
+            now + 2 * TimeConstants.MILLIS_PER_HOUR,
+            plan.first { it.type == NotificationType.PERSISTENT_REFRESH }.triggerAtMillis,
+        )
+    }
+
+    @Test
+    fun `plan skips the persistent refresh once dice are full and the gift is ready`() {
+        val plan = SchedulePlanner.buildPlan(
+            state(persistentNotificationEnabled = true, currentDice = 80, giftInMillis = 0),
+            now,
+        )
+
+        assertTrue(plan.none { it.type == NotificationType.PERSISTENT_REFRESH })
     }
 }
